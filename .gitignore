@@ -1,0 +1,6 @@
+app.jar
+*_output.xml
+.idea/
+*.class
+*.log
+pgadmin/pgpass

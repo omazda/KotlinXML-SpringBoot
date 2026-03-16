@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "students_db",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "students_db",
+      "Username": "admin",
+      "Password": "admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

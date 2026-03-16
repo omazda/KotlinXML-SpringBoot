@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<students>
+    <student>
+        <first_name>Alice</first_name>
+        <second_name>Smith</second_name>
+        <skills>
+            <skill hard="true">Java</skill>
+            <skill hard="true">Spring</skill>
+            <skill soft="true">Leadership</skill>
+        </skills>
+    </student>
+    <student>
+        <first_name>Bob</first_name>
+        <second_name>Johnson</second_name>
+        <skills>
+            <skill hard="true">Go</skill>
+            <skill hard="true">Docker</skill>
+            <skill hard="true">Kubernetes</skill>
+            <skill soft="true">Communication</skill>
+        </skills>
+    </student>
+    <student>
+        <first_name>Carol</first_name>
+        <second_name>Williams</second_name>
+        <skills>
+            <skill hard="true">React</skill>
+            <skill soft="true">Design thinking</skill>
+        </skills>
+    </student>
+    <student>
+        <first_name>Dave</first_name>
+        <second_name>Brown</second_name>
+        <skills>
+            <skill hard="true">Rust</skill>
+            <skill hard="true">C++</skill>
+            <skill hard="true">Embedded</skill>
+        </skills>
+    </student>
+</students>

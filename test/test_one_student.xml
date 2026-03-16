@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<students>
+    <student>
+        <first_name>Anna</first_name>
+        <second_name>Koroleva</second_name>
+        <skills>
+            <skill hard="true">Python</skill>
+            <skill soft="true">Teamwork</skill>
+        </skills>
+    </student>
+</students>
