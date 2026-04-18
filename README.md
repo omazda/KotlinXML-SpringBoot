@@ -1,123 +1,199 @@
-# Kotlin XML Processor
+# Students Spring Dashboard
 
-Консольное приложение на Kotlin для парсинга XML-файлов с сохранением данных в PostgreSQL.
+Веб-приложение на Kotlin и Spring Boot для импорта XML-файлов со студентами, хранения данных в PostgreSQL и работы с ними через браузер.
 
-## Как работает
+## Что есть в проекте
 
-```
-XML файл
-    │
-    ▼
-АНМАРШАЛИНГ (XML → объекты Kotlin)
-    │
-    ├──► МАРШАЛИНГ → вывод в консоль + файл _output.xml
-    │
-    └──► StudentRepository → PostgreSQL
-```
+- Spring Boot 3
+- Spring MVC
+- Spring Data JPA
+- JAXB
+- PostgreSQL
+- Docker Compose
+- pgAdmin
 
-Каждый запуск с любым XML создаёт новую запись импорта в БД — данные не перезаписываются.
+Приложение умеет:
 
-## Технологии
-
-| | |
-|---|---|
-| Язык | Kotlin 2.3.10 |
-| Платформа | Java 25 |
-| XML | JAXB 4.0.5 (Jakarta) |
-| БД | PostgreSQL 16 (Docker) |
-| JDBC | postgresql-42.7.5 |
-| Веб-интерфейс БД | pgAdmin 4 (Docker) |
+- загружать XML со студентами;
+- сохранять импорт в PostgreSQL;
+- показывать динамическую таблицу в браузере;
+- искать, фильтровать и сортировать строки;
+- редактировать студентов;
+- удалять студентов;
+- удалять пустой импорт после удаления последнего студента;
+- выгружать всех текущих студентов в один XML.
 
 ## Структура проекта
 
-```
+```text
 .
-├── src/
-│   ├── model/             # JAXB-модели: Skill, Student, Students
-│   ├── xml/               # XmlProcessor — marshal / unmarshal
-│   ├── db/                # DatabaseConfig, StudentRepository
-│   └── Main.kt            # Точка входа
-├── libs/                  # JAR-зависимости
-├── pgadmin/
-│   ├── servers.json       # Автоматическая регистрация сервера в pgAdmin
-│   └── pg_hba.conf        # Настройка аутентификации PostgreSQL
-├── test/                  # Тестовые XML-файлы
-├── docker-compose.yml     # PostgreSQL + pgAdmin
-├── build.sh               # Компиляция и запуск
-└── students.xml           # Пример входного файла
+├── src/main/kotlin/com/students
+│   ├── StudentApplication.kt
+│   ├── entity/
+│   ├── model/
+│   ├── repository/
+│   ├── service/
+│   └── web/
+├── src/main/resources
+│   ├── application.properties
+│   └── templates/index.html
+├── docker-compose.yml
+├── Dockerfile
+├── pom.xml
+├── mvnw
+├── mvnw.cmd
+└── pgadmin/
 ```
 
-## Схема БД
+## API
 
+### `GET /api/imports`
+
+Возвращает JSON со сводкой и строками таблицы:
+
+- количество импортов;
+- количество студентов;
+- список строк для интерфейса.
+
+### `POST /api/imports`
+
+Принимает `multipart/form-data` с полем `file` и импортирует XML в БД.
+
+### `PUT /api/imports/students/{studentId}`
+
+Обновляет студента и его список навыков.
+
+### `DELETE /api/imports/students/{studentId}`
+
+Удаляет студента. Если это был последний студент импорта, сам импорт тоже удаляется.
+
+### `GET /api/imports/export`
+
+Возвращает единый XML-файл со всеми студентами, которые сейчас есть в БД.
+
+## Веб-интерфейс
+
+Главная страница:
+
+```text
+http://localhost:8081
 ```
-imports  (id, file_name, imported_at)
-    │
-students (id, import_id, first_name, second_name)
-    │
-skills   (id, student_id, name, is_hard)
-```
 
-Таблицы создаются автоматически при первом запуске.
+На странице есть:
 
-## Запуск
+- форма загрузки XML;
+- счётчики импортов и студентов;
+- динамическая таблица;
+- поиск, фильтрация и сортировка;
+- редактирование и удаление студентов;
+- кнопка выгрузки всех студентов в XML;
+- просмотр XML после маршалинга.
 
-### 1. Поднять инфраструктуру
+## Docker
+
+### Запуск всего стека
 
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
 
-### 2. Скомпилировать
+Эта команда поднимает сразу все сервисы:
+
+- PostgreSQL: `localhost:5433`
+- Spring Boot: `http://localhost:8081`
+- pgAdmin: `http://localhost:8080`
+
+### Остановка
 
 ```bash
-./build.sh
+docker compose down
 ```
 
-> Запускать только из **bash** (Git Bash / WSL).
-
-### 3. Запустить с XML-файлом
+### Полная очистка вместе с БД
 
 ```bash
-# только входной файл
-./build.sh path/to/input.xml
-
-# входной + выходной путь
-./build.sh path/to/input.xml path/to/output.xml
+docker compose down -v
 ```
 
-Или напрямую:
+Важно:
 
-```bash
-java -classpath "app.jar;libs/jakarta.xml.bind-api-4.0.2.jar;libs/jaxb-impl-4.0.5.jar;libs/jaxb-core-4.0.5.jar;libs/jakarta.activation-api-2.1.3.jar;libs/angus-activation-2.0.2.jar;libs/istack-commons-runtime-4.2.0.jar;libs/txw2-4.0.5.jar;libs/postgresql-42.7.5.jar" MainKt <input-xml> [output-xml]
+- данные PostgreSQL сохраняются в named volume `pg_data`;
+- логин и пароль в compose указаны открыто, это допустимо только для dev-среды.
+
+Параметры по умолчанию:
+
+- БД: `students_db`
+- пользователь: `admin`
+- пароль: `admin`
+
+pgAdmin:
+
+- email: `admin@admin.com`
+- password: `admin`
+
+## Запуск приложения без Docker
+
+### Windows
+
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
-Если `output-xml` не указан — файл сохраняется рядом с input под именем `<имя>_output.xml`. Если указана несуществующая директория — она создаётся автоматически.
-
-## pgAdmin
-
-Веб-интерфейс для просмотра БД: **http://localhost:8080**
-
-| | |
-|---|---|
-| Email | `admin@admin.com` |
-| Password | `admin` |
-
-Сервер `students_db` регистрируется автоматически.
-
-## Настройка подключения к БД
-
-Параметры можно переопределить через переменные окружения:
+### Git Bash / Linux / macOS
 
 ```bash
+./mvnw spring-boot:run
+```
+
+Приложение ожидает доступный PostgreSQL и использует настройки из переменных окружения.
+
+## Сборка JAR
+
+```powershell
+.\mvnw.cmd clean package
+java -jar target/students-spring-1.0.0.jar
+```
+
+## Переменные окружения
+
+Можно переопределить подключение к БД:
+
+```text
 DB_URL=jdbc:postgresql://localhost:5433/students_db
 DB_USER=admin
 DB_PASSWORD=admin
 ```
 
-## Пример XML
+## Persistence
+
+Сохранение и чтение данных реализовано через Spring Data JPA.
+
+Основные сущности:
+
+- `ImportEntity`
+- `StudentEntity`
+- `SkillEntity`
+
+Схема:
+
+```text
+imports -> students -> skills
+```
+
+На текущем этапе Hibernate использует:
+
+```text
+spring.jpa.hibernate.ddl-auto=update
+```
+
+Для production-сценария это нужно заменить на управляемые миграции через Flyway или Liquibase.
+
+## Формат XML
+
+Поддерживается формат:
 
 ```xml
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <students>
     <student>
         <first_name>Ivan</first_name>
@@ -130,10 +206,12 @@ DB_PASSWORD=admin
 </students>
 ```
 
-## Авторы
+## Экспорт XML
 
-| Роль | |
-|---|---|
-| Автор | Мазняк Олег Владимирович |
-| Код-агент | Claude (Anthropic) |
-| Независимое ревью | Google Gemini |
+Экспорт через `GET /api/imports/export` формируется из текущего состояния БД.
+
+Это значит, что в файл попадают:
+
+- все актуальные студенты;
+- изменения после редактирования;
+- результат удаления студентов и импортов.

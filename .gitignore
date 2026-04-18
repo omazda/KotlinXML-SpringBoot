@@ -1,6 +1,10 @@
-app.jar
-*_output.xml
+target/
 .idea/
 *.class
 *.log
+*.jar
+app.jar
+libs/
+*_output.xml
+**/*_output.xml
 pgadmin/pgpass

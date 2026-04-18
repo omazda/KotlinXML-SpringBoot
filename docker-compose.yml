@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: students_db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: students_db
       POSTGRES_USER: admin
@@ -14,12 +15,30 @@ services:
       timeout: 5s
       retries: 5
     volumes:
+      - pg_data:/var/lib/postgresql/data
       - ./pgadmin/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     command: postgres -c hba_file=/etc/postgresql/pg_hba.conf
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: students_app
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/students_db
+      DB_USER: admin
+      DB_PASSWORD: admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: students_pgadmin
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -32,3 +51,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  pg_data:
