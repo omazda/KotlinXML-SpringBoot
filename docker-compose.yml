@@ -29,6 +29,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/students_db
       DB_USER: admin
       DB_PASSWORD: admin
+      APP_API_BASE: /api
     ports:
       - "8081:8081"
     depends_on:

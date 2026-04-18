@@ -593,7 +593,7 @@
     </section>
 </main>
 
-<script>
+<script th:inline="javascript">
     const tableBody = document.getElementById("tableBody");
     const importCount = document.getElementById("importCount");
     const studentCount = document.getElementById("studentCount");
@@ -604,6 +604,8 @@
     const submitButton = document.getElementById("submitButton");
     const previewPanel = document.getElementById("previewPanel");
     const xmlPreview = document.getElementById("xmlPreview");
+    const exportAllLink = document.querySelector('.secondary-actions .action-link[href="/api/imports/export"]');
+    const apiEndpointLabel = document.querySelector(".refresh-note .mono");
     const searchInput = document.getElementById("searchInput");
     const skillFilter = document.getElementById("skillFilter");
     const sortField = document.getElementById("sortField");
@@ -612,8 +614,11 @@
     const visibleCount = document.getElementById("visibleCount");
     const filterState = document.getElementById("filterState");
 
+    const DEFAULT_API_BASE = /*[[${apiBase}]]*/ "/api";
+
     let allRows = [];
     let editingStudentId = null;
+    let apiBase = DEFAULT_API_BASE;
 
     function setStatus(message, type = "") {
         statusNode.textContent = message;
@@ -655,6 +660,90 @@
             .split(",")
             .map(item => item.trim())
             .filter(item => item.length > 0);
+    }
+
+    function normalizeApiBase(value) {
+        const trimmed = String(value ?? "").trim();
+        if (!trimmed) {
+            return DEFAULT_API_BASE;
+        }
+
+        const withoutTrailingSlash = trimmed.replace(/\/+$/, "");
+        if (!withoutTrailingSlash) {
+            return DEFAULT_API_BASE;
+        }
+
+        if (/^https?:\/\//i.test(withoutTrailingSlash)) {
+            return withoutTrailingSlash;
+        }
+
+        return withoutTrailingSlash.startsWith("/") ? withoutTrailingSlash : `/${withoutTrailingSlash}`;
+    }
+
+    function buildApiUrl(path) {
+        return `${apiBase}${path}`;
+    }
+
+    function updateApiBindings() {
+        if (exportAllLink) {
+            exportAllLink.href = buildApiUrl("/imports/export");
+        }
+
+        if (apiEndpointLabel) {
+            apiEndpointLabel.textContent = `GET ${buildApiUrl("/imports")}`;
+        }
+
+        const apiBaseInput = document.getElementById("apiBaseInput");
+        if (apiBaseInput) {
+            apiBaseInput.value = apiBase;
+        }
+    }
+
+    function saveApiBase() {
+        const apiBaseInput = document.getElementById("apiBaseInput");
+        apiBase = normalizeApiBase(apiBaseInput?.value);
+        window.localStorage.setItem(API_BASE_STORAGE_KEY, apiBase);
+        updateApiBindings();
+        setStatus(`Базовый URL API обновлён: ${apiBase}`, "success");
+        loadDashboard();
+    }
+
+    function resetApiBase() {
+        apiBase = DEFAULT_API_BASE;
+        window.localStorage.removeItem(API_BASE_STORAGE_KEY);
+        updateApiBindings();
+        setStatus("Базовый URL API сброшен на /api", "success");
+        loadDashboard();
+    }
+
+    function mountApiControls() {
+        if (!uploadCard || document.getElementById("apiBaseInput")) {
+            return;
+        }
+
+        const controls = document.createElement("div");
+        controls.className = "secondary-actions";
+        controls.innerHTML = `
+            <div class="field" style="flex: 1 1 100%;">
+                <label for="apiBaseInput">Базовый URL API</label>
+                <input id="apiBaseInput" type="text" placeholder="/api или http://localhost:8081/api">
+            </div>
+            <button id="saveApiBaseButton" type="button" class="ghost-button">Сохранить API</button>
+            <button id="resetApiBaseButton" type="button" class="ghost-button">Сбросить API</button>
+        `;
+
+        uploadCard.insertBefore(controls, statusNode);
+
+        document.getElementById("saveApiBaseButton")?.addEventListener("click", saveApiBase);
+        document.getElementById("resetApiBaseButton")?.addEventListener("click", resetApiBase);
+        document.getElementById("apiBaseInput")?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                saveApiBase();
+            }
+        });
+
+        updateApiBindings();
     }
 
     function rowMatchesSearch(row, query) {
@@ -820,7 +909,7 @@
         const softSkills = parseSkills(document.getElementById("edit-soft-skills")?.value ?? "");
 
         try {
-            const response = await fetch(`/api/imports/students/${studentId}`, {
+            const response = await fetch(buildApiUrl(`/imports/students/${studentId}`), {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ firstName, secondName, hardSkills, softSkills })
@@ -847,7 +936,7 @@
         }
 
         try {
-            const response = await fetch(`/api/imports/students/${studentId}`, {
+            const response = await fetch(buildApiUrl(`/imports/students/${studentId}`), {
                 method: "DELETE"
             });
 
@@ -872,7 +961,7 @@
 
     async function loadDashboard() {
         try {
-            const response = await fetch("/api/imports", { headers: { "Accept": "application/json" } });
+            const response = await fetch(buildApiUrl("/imports"), { headers: { "Accept": "application/json" } });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -903,7 +992,7 @@
         setStatus("Файл загружается и обрабатывается...");
 
         try {
-            const response = await fetch("/api/imports", {
+            const response = await fetch(buildApiUrl("/imports"), {
                 method: "POST",
                 body: formData
             });
@@ -926,6 +1015,9 @@
             submitButton.disabled = false;
         }
     });
+
+    apiBase = normalizeApiBase(DEFAULT_API_BASE);
+    updateApiBindings();
 
     searchInput.addEventListener("input", applyViewState);
     skillFilter.addEventListener("change", applyViewState);

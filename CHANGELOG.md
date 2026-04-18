@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.2] - 2026-04-18
+
+### Changed
+- Базовый URL API для веб-интерфейса перенесён из клиентской настройки в конфиг Spring.
+- `PageController` теперь передаёт значение `app.api.base` в шаблон `index.html`.
+- `application.properties` дополнен настройкой `app.api.base=${APP_API_BASE:/api}`.
+- `docker-compose.yml` дополнен переменной окружения `APP_API_BASE=/api` для сервиса `app`.
+- `README.md` обновлён под новую схему конфигурации API через property и env.
+
+### Infrastructure
+- Для Docker-стека базовый URL API теперь задаётся через `APP_API_BASE`.
+- После пересборки `docker compose up --build -d` приложение продолжает отвечать на `http://localhost:8081`.
+
+---
+
 ## [3.0.1] - 2026-04-18
 
 ### Changed

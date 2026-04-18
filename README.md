@@ -7,6 +7,7 @@
 - Spring Boot 3
 - Spring MVC
 - Spring Data JPA
+- Thymeleaf
 - JAXB
 - PostgreSQL
 - Docker Compose
@@ -89,6 +90,11 @@ http://localhost:8081
 - кнопка выгрузки всех студентов в XML;
 - просмотр XML после маршалинга.
 
+Базовый URL API больше не настраивается на странице. Он задаётся через конфиг приложения:
+
+- property `app.api.base`
+- переменная окружения `APP_API_BASE`
+
 ## Docker
 
 ### Запуск всего стека
@@ -118,18 +124,31 @@ docker compose down -v
 Важно:
 
 - данные PostgreSQL сохраняются в named volume `pg_data`;
-- логин и пароль в compose указаны открыто, это допустимо только для dev-среды.
+- логин и пароль в compose указаны открыто, это допустимо только для dev-среды;
+- базовый URL API для UI задаётся через `APP_API_BASE` в `docker-compose.yml`.
 
 Параметры по умолчанию:
 
 - БД: `students_db`
 - пользователь: `admin`
 - пароль: `admin`
+- API base: `/api`
 
 pgAdmin:
 
 - email: `admin@admin.com`
 - password: `admin`
+
+Фрагмент `docker-compose.yml` для приложения:
+
+```yaml
+app:
+  environment:
+    DB_URL: jdbc:postgresql://db:5432/students_db
+    DB_USER: admin
+    DB_PASSWORD: admin
+    APP_API_BASE: /api
+```
 
 ## Запуск приложения без Docker
 
@@ -156,13 +175,44 @@ java -jar target/students-spring-1.0.0.jar
 
 ## Переменные окружения
 
-Можно переопределить подключение к БД:
+Можно переопределить подключение к БД и базовый URL API:
 
 ```text
 DB_URL=jdbc:postgresql://localhost:5433/students_db
 DB_USER=admin
 DB_PASSWORD=admin
+APP_API_BASE=/api
 ```
+
+Пример для локального запуска без Docker:
+
+```powershell
+$env:DB_URL="jdbc:postgresql://localhost:5432/students_db"
+$env:DB_USER="admin"
+$env:DB_PASSWORD="admin"
+$env:APP_API_BASE="/api"
+.\mvnw.cmd spring-boot:run
+```
+
+## Конфигурация Spring
+
+В `application.properties` используются такие значения:
+
+```properties
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5433/students_db}
+spring.datasource.username=${DB_USER:admin}
+spring.datasource.password=${DB_PASSWORD:admin}
+server.port=8081
+app.api.base=${APP_API_BASE:/api}
+```
+
+Если нужно направить UI на другой backend, можно задать, например:
+
+```text
+APP_API_BASE=http://host.docker.internal:8081/api
+```
+
+Важно: если это другой origin, на backend потребуется корректный CORS.
 
 ## Persistence
 
